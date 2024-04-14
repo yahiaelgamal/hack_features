@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
+import { Link } from "lucide-react";
 
 import features from "./features.json";
 
@@ -58,7 +58,7 @@ export default function Home() {
           position: "left",
           verticalAlign: "middle",
           align: "right",
-          textStyle: { fontSize: 12 },
+          fontSize: 12,
         },
 
         leaves: {
@@ -119,13 +119,25 @@ export default function Home() {
               "degree",
               "degree_rank",
               "degree_centrality_rank",
-              "betweenness_centrality_rank",
-              "pagerank",
+              // "betweenness_centrality_rank",
+              "pagerank_rank",
             ].map((key) => (
-              <p className="p-1 bg-slate-50 text-slate-900">
+              <p key={key} className="p-1 bg-slate-50 text-slate-900">
                 <b>{key}</b>: {features[selectedFeature][key]}
               </p>
             ))}
+            <div className="p-1 mt-5">
+              <a
+                className="text-blue-800 underline text-lg"
+                href={`https://www.neuronpedia.org/gpt2-small/8-res-jb/${selectedFeature
+                  .split("/")[1]
+                  .slice(1)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Neuronpedia Page
+              </a>
+            </div>
           </div>
         )}
       </div>
