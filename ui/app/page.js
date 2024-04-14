@@ -174,7 +174,9 @@ export default function Home() {
               <div>
                 <a
                   className="text-blue-800 text-lg flex"
-                  href={`https://www.neuronpedia.org/gpt2-small/8-res-jb/${selectedFeature
+                  href={`https://www.neuronpedia.org/gpt2-small/${selectedFeature
+                    .split("/")[0]
+                    .slice(1)}-res-jb/${selectedFeature
                     .split("/")[1]
                     .slice(1)}`}
                   target="_blank"
