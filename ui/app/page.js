@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Link } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 
 import features from "./features.json";
 
@@ -20,6 +20,7 @@ const baseUrl =
 
 export default function Home() {
   const [selectedFeature, setSelectedFeature] = useState(null);
+  const [featuresComparisonLink, setFeaturesComparisonLink] = useState(null);
   const [tree, setTree] = useState({});
 
   const options = {
@@ -52,7 +53,7 @@ export default function Home() {
 
         layout: "orthogonal",
 
-        orient: "LR", // Set the orientation to left-to-right
+        orient: "LR", // vertical
 
         label: {
           position: "left",
@@ -69,7 +70,7 @@ export default function Home() {
           },
         },
 
-        initialTreeDepth: 12,
+        initialTreeDepth: 10,
 
         emphasis: {
           focus: "descendant", // ancestor
@@ -88,9 +89,49 @@ export default function Home() {
     ],
   };
 
+  function getFeatures(tree) {
+    const features = [];
+    const threshold = 0;
+
+    function traverse(node) {
+      const [layer, feature] = node.name.split("/");
+      if (
+        node.value >= threshold ||
+        node.children.filter((n) => n.value >= threshold).length > 0
+      ) {
+        features.push({
+          layer: layer.substring(1),
+          feature: feature.substring(1),
+        });
+      }
+
+      if (node.children) {
+        node.children.forEach(traverse);
+      }
+    }
+
+    if (tree.name) {
+      traverse(tree);
+    }
+    return features;
+  }
+
+  function getUrl(features) {
+    let url =
+      "https://neuronpedia.org/quick-list/?name=feature-comparison-temp";
+    const formattedFeatures = features.map((feature) => ({
+      modelId: "gpt2-small",
+      layer: `${feature.layer}-res-jb`,
+      index: feature.feature,
+    }));
+    url += "&features=" + encodeURIComponent(JSON.stringify(formattedFeatures));
+    return url;
+  }
+
   const handleValueChange = (value) => {
     setSelectedFeature(value);
     setTree(features[value].tree);
+    setFeaturesComparisonLink(getUrl(getFeatures(features[value].tree)));
   };
 
   return (
@@ -112,7 +153,7 @@ export default function Home() {
           </SelectContent>
         </Select>
         {selectedFeature && (
-          <div className="mt-5">
+          <div className="mt-5 ">
             {[
               "feature_id",
               "trace_size",
@@ -122,21 +163,37 @@ export default function Home() {
               // "betweenness_centrality_rank",
               "pagerank_rank",
             ].map((key) => (
-              <p key={key} className="p-1 bg-slate-50 text-slate-900">
-                <b>{key}</b>: {features[selectedFeature][key]}
+              <p
+                key={key}
+                className="p-1 bg-slate-50 text-slate-900 text-md font-condensed"
+              >
+                {key}: {features[selectedFeature][key]}
               </p>
             ))}
             <div className="p-1 mt-5">
-              <a
-                className="text-blue-800 underline text-lg"
-                href={`https://www.neuronpedia.org/gpt2-small/8-res-jb/${selectedFeature
-                  .split("/")[1]
-                  .slice(1)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Neuronpedia Page
-              </a>
+              <div>
+                <a
+                  className="text-blue-800 text-lg flex"
+                  href={`https://www.neuronpedia.org/gpt2-small/8-res-jb/${selectedFeature
+                    .split("/")[1]
+                    .slice(1)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Neuronpedia Feature Page <ExternalLink className="ml-2" />
+                </a>
+              </div>
+              <div className="mt-2">
+                <a
+                  className="text-blue-800 text-lg flex "
+                  href={featuresComparisonLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Neuronpedia Feature Comparison{" "}
+                  <ExternalLink className="ml-2" />
+                </a>
+              </div>
             </div>
           </div>
         )}
