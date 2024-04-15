@@ -3,34 +3,38 @@
 import React, { useState } from "react";
 import ReactECharts from "echarts-for-react";
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { CaretSortIcon, CheckIcon } from "@radix-ui/react-icons";
+
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import { ExternalLink } from "lucide-react";
 
-import features from "./features.json";
+import features from "./features_annotated.json";
 
-const baseUrl =
-  process.env.REACT_APP_ENV === "prod" ? "" : "http://localhost:8000";
+const featuresData = Object.keys(features).map((f) => ({
+  value: f,
+  label: `${f} (${features[f].trace_size})`,
+}));
 
 export default function Home() {
   const [selectedFeature, setSelectedFeature] = useState(null);
+  const [selectedFeatureData, setSelectedFeatureData] = useState(null);
   const [featuresComparisonLink, setFeaturesComparisonLink] = useState(null);
+  const [open, setOpen] = useState(false);
   const [tree, setTree] = useState({});
 
   const options = {
-    // tooltip: {
-    //   trigger: "item",
-    //   triggerOn: "mousemove",
-    //   formatter: `
-    //         Name: {b}<br/>
-    //     `,
-    // },
     series: [
       {
         type: "tree",
@@ -54,12 +58,37 @@ export default function Home() {
         layout: "orthogonal",
 
         orient: "LR", // vertical
+        edgeShape: "polyline", // "curve",
+        edgeSymbol: ["", "arrow"],
 
         label: {
           position: "left",
-          verticalAlign: "middle",
+          verticalAlign: "bottom",
           align: "right",
           fontSize: 12,
+          offset: [0, -5],
+          formatter: function (params) {
+            const desc = params.data.desc;
+            const name = params.data.name;
+            if (desc != null) {
+              return `{name|${name}}\n{desc|${desc}}`;
+            }
+            return name;
+          },
+          rich: {
+            name: {
+              fontSize: 12,
+              fontWeight: "bold",
+              color: "#333",
+              align: "right",
+              padding: [0, 0, 5, 0],
+            },
+            desc: {
+              fontSize: 12,
+              color: "#333",
+              align: "right",
+            },
+          },
         },
 
         leaves: {
@@ -70,7 +99,7 @@ export default function Home() {
           },
         },
 
-        initialTreeDepth: 10,
+        initialTreeDepth: 5,
 
         emphasis: {
           focus: "descendant", // ancestor
@@ -130,6 +159,7 @@ export default function Home() {
 
   const handleValueChange = (value) => {
     setSelectedFeature(value);
+    setSelectedFeatureData({ ...features[value], tree: null });
     setTree(features[value].tree);
     setFeaturesComparisonLink(getUrl(getFeatures(features[value].tree)));
   };
@@ -137,21 +167,56 @@ export default function Home() {
   return (
     <div className="flex">
       <div className="mt-5 ml-4 flex-none">
-        <Select onValueChange={handleValueChange} value={selectedFeature}>
-          <SelectTrigger className="w-[300px]">
-            <SelectValue placeholder="Select a feature" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              <SelectLabel>Features</SelectLabel>
-              {Object.keys(features).map((key) => (
-                <SelectItem key={key} value={key}>
-                  {`${key} (${features[key].trace_size})`}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={open}
+              className="w-[300px] justify-between"
+            >
+              {selectedFeature
+                ? featuresData.find(
+                    (feature) => feature.value === selectedFeature
+                  )?.label
+                : "Select Feature"}
+              <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[300px] p-2">
+            <Command>
+              <CommandInput placeholder="Search Feature..." className="h-9" />
+              <CommandEmpty>No features found.</CommandEmpty>
+              <CommandGroup className="overflow-auto max-h-[400px]">
+                {featuresData.map((feature) => (
+                  <CommandItem
+                    key={feature.value}
+                    value={feature.value}
+                    onSelect={(currentValue) => {
+                      handleValueChange(
+                        currentValue === selectedFeature
+                          ? ""
+                          : currentValue.toUpperCase()
+                      );
+                      setOpen(false);
+                    }}
+                  >
+                    {feature.label}
+                    <CheckIcon
+                      className={cn(
+                        "ml-auto h-4 w-4",
+                        selectedFeature === feature.value
+                          ? "opacity-100"
+                          : "opacity-0"
+                      )}
+                    />
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </Command>
+          </PopoverContent>
+        </Popover>
+
         {selectedFeature && (
           <div className="mt-5 ">
             {[
@@ -167,7 +232,7 @@ export default function Home() {
                 key={key}
                 className="p-1 bg-slate-50 text-slate-900 text-md font-condensed"
               >
-                {key}: {features[selectedFeature][key]}
+                {key}: {selectedFeatureData[key]}
               </p>
             ))}
             <div className="p-1 mt-5">
